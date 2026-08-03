@@ -1,0 +1,68 @@
+FREEDOMHUB VPN — FREE CODE-SIGNING (SmartScreen) SETUP
+========================================================================
+Goal: remove the Windows "unrecognized app / app control" warning for free.
+Route: publish the GPL-modified source, obtain the free DigiCert "Open Source"
+       code-signing certificate, then sign each release automatically.
+
+This is the ONLY free way to get rid of the SmartScreen block.
+One step (Step 4, identity verification) requires a human (you) — a browser + a
+GitHub account. Everything else is scripted.
+
+--------------------------------------------------------------------------
+STEP 1 — Publish the modified source (public GitHub repo)
+--------------------------------------------------------------------------
+The client is GPL-3.0 (v2rayN) so distributing it legally REQUIRES making the
+modified source available. Use the prepared repo at /opt/v2rayN-src.
+
+    cd /opt/v2rayN-src
+    gh auth login                  # or: git push with a personal access token
+    gh repo create YOUR-USERNAME/freedomhub-vpn --public --source . --push
+
+(or, without gh):
+    git remote add origin https://github.com/YOUR-USERNAME/freedomhub-vpn.git
+    git push -u origin main
+
+The repo already contains: LICENSE (GPL-3.0), README.md (attribution + build),
+oss/sign-vpn.sh, oss/SIGNING-STEPS.txt, freedomhub-v2rayn.patch.
+
+IMPORTANT: keep this repo public for as long as you distribute the signed
+binaries, or the certificate's open-source condition is violated.
+
+--------------------------------------------------------------------------
+STEP 2 — Create the free DigiCert Open Source certificate
+--------------------------------------------------------------------------
+Go to: https://www.digicert.com/oss    (program: 'Open Source Developer')
+
+Follow the flow:
+  - Link your GitHub account (identity).
+  - Generate an RSA 3072 key (they hold custody + sign via their client).
+  - Complete the identity verification (free). THIS IS THE ONE 10-MINUTE
+    MANUAL STEP ONLY YOU CAN DO.
+  - MESSAGE the certificate: it can be downloaded as a .p12.
+
+You will later end up with a .p12 file + a password.
+
+--------------------------------------------------------------------------
+STEP 3 — Sign every release build
+--------------------------------------------------------------------------
+On the build server, after each `dotnet publish`:
+
+    OUT_DIR=/opt/v2rayN-out ./oss/sign-vpn.sh /path/to/cert.p12 'PASSWORD'
+
+This signs FreedomHubVPN.exe + DLLs with SHA-256 + timestamp. Then re-pack
+the zip and upload to the download page as before.
+
+Verify:
+    osslsigncode verify /opt/v2rayN-out/FreedomHubVPN.exe
+
+--------------------------------------------------------------------------
+STEP 4 — Trim any residue (optional, immediate not)
+--------------------------------------------------------------------------
+Even a signed new-publisher app can occasionally show a one-time soft
+"Verified publisher" prompt until SmartScreen reputation builds via real
+downloads. It removes the scary HARD block ("unrecognized app / App Control")
+immediately, which is the main problem. Reputation grows automatically as
+users install.
+
+If you ever prefer ZERO prompt guaranteed AND have ~$10/mo, Azure Trusted
+Signing is the EV-equivalent upgrade. Not needed if the free path works.

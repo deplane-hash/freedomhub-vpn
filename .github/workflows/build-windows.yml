@@ -43,7 +43,7 @@ jobs:
           Write-Host "zip size: $((Get-Item $zip).Length) bytes"
 
       - name: Upload unsigned artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FreedomHubVPN-zip-unsigned
           path: |

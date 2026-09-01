@@ -74,6 +74,33 @@
                                     Visibility="Collapsed" />
                             </Grid>
                         </Button>
+                        <Button
+                            x:Name="btnLocation"
+                            Height="36"
+                            Margin="{StaticResource MarginLeftRight8}"
+                            Padding="10,0"
+                            ToolTip="Choose Germany or Netherlands"
+                            Style="{StaticResource DefButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon
+                                    Width="18"
+                                    Height="18"
+                                    VerticalAlignment="Center"
+                                    Kind="MapMarkerPath" />
+                                <TextBlock
+                                    Margin="6,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="Location" />
+                            </StackPanel>
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Germany (Nuremberg)" Click="MenuLocationGermany_Click" />
+                                    <MenuItem Header="Netherlands" Click="MenuLocationNetherlands_Click" />
+                                    <Separator />
+                                    <MenuItem Header="Open web location settings" Click="MenuLocationWeb_Click" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
                         <Menu Margin="0,1" Style="{StaticResource ToolbarMenu}">
                             <MenuItem Padding="{StaticResource MarginLeftRight8}" AutomationProperties.Name="{x:Static resx:ResUI.menuServers}">
                                 <MenuItem.Header>

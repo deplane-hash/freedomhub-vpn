@@ -30,6 +30,7 @@ public partial class MainWindow
         menuCheckUpdate.Click += MenuCheckUpdate_Click;
         btnNewUpdate.Click += MenuCheckUpdate_Click;
         btnConnect.Click += BtnConnect_Click;
+        btnLocation.Click += BtnLocation_Click;
         menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
 
         pbTheme.Content ??= new ThemeSettingView();
@@ -264,6 +265,48 @@ public partial class MainWindow
             UpdateConnectState();
             ViewModel.ReloadCmd.Execute().Subscribe(_ => UpdateConnectState());
         }
+    }
+
+    private void BtnLocation_Click(object sender, RoutedEventArgs e)
+    {
+        if (btnLocation.ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = btnLocation;
+            menu.IsOpen = true;
+        }
+    }
+
+    private async void MenuLocationGermany_Click(object sender, RoutedEventArgs e)
+    {
+        await SelectFreedomHubLocationAsync("de", "Germany", "5.45.110.86");
+    }
+
+    private async void MenuLocationNetherlands_Click(object sender, RoutedEventArgs e)
+    {
+        await SelectFreedomHubLocationAsync("nl", "Netherlands", "113.30.188.9");
+    }
+
+    private void MenuLocationWeb_Click(object sender, RoutedEventArgs e)
+    {
+        ProcUtils.ProcessStart("https://freedomhub.at/vpn.php");
+    }
+
+    private async Task SelectFreedomHubLocationAsync(string code, string label, string address)
+    {
+        var profile = ViewModel.ProfilesViewModel.ProfileItems.FirstOrDefault(item =>
+            string.Equals(item.Address, address, StringComparison.OrdinalIgnoreCase)
+            || item.Remarks.Contains(label, StringComparison.OrdinalIgnoreCase));
+
+        if (profile is null || string.IsNullOrEmpty(profile.IndexId))
+        {
+            ProcUtils.ProcessStart($"https://freedomhub.at/vpn.php?location={code}");
+            NoticeManager.Instance.Enqueue($"No {label} profile is installed. Opened web location settings.");
+            return;
+        }
+
+        await ViewModel.ProfilesViewModel.SetDefaultServer(profile.IndexId);
+        btnLocation.ToolTip = $"Current location: {label}";
+        NoticeManager.Instance.Enqueue($"FreedomHub location set to {label}.");
     }
 
     private static bool IsAnyCoreRunning()

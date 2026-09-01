@@ -34,7 +34,7 @@ public partial class MainWindow
         btnNewUpdate.Click += MenuCheckUpdate_Click;
         btnConnect.Click += BtnConnect_Click;
         btnLocation.Click += BtnLocation_Click;
-        freedomHubHome.ConnectRequested += ConnectFreedomHubAsync;
+        freedomHubHome.ConnectRequested += (link, ip) => { _ = ConnectFreedomHubAsync(link, ip); };
         freedomHubHome.PowerRequested += () =>
         {
             if (btnConnect is not null) BtnConnect_Click(btnConnect, new RoutedEventArgs());

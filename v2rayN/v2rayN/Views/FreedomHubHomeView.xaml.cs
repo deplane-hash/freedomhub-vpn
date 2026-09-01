@@ -22,7 +22,7 @@ public partial class FreedomHubHomeView
     public FreedomHubHomeView()
     {
         InitializeComponent();
-        lblVersion.Text = "v14 · " + Utils.GetVersion();
+        lblVersion.Text = "v15 · " + Utils.GetVersion();
     }
 
     private async void BtnSignIn_Click(object sender, RoutedEventArgs e)

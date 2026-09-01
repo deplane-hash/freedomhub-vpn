@@ -75,6 +75,26 @@
                             </Grid>
                         </Button>
                         <Button
+                            x:Name="btnFhHome"
+                            Height="36"
+                            Margin="{StaticResource MarginLeftRight8}"
+                            Padding="10,0"
+                            ToolTip="Return to the FreedomHub view"
+                            Style="{StaticResource DefButton}"
+                            Click="BtnFhHome_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon
+                                    Width="18"
+                                    Height="18"
+                                    VerticalAlignment="Center"
+                                    Kind="HomeHeart" />
+                                <TextBlock
+                                    Margin="6,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="FreedomHub" />
+                            </StackPanel>
+                        </Button>
+                        <Button
                             x:Name="btnLocation"
                             Height="36"
                             Margin="{StaticResource MarginLeftRight8}"
@@ -503,6 +523,7 @@
                     <materialDesign:Snackbar x:Name="MainSnackbar" MessageQueue="{materialDesign:MessageQueue}" />
                 </Grid>
             </DockPanel>
+            <view:FreedomHubHomeView x:Name="freedomHubHome" />
         </Grid>
     </materialDesign:DialogHost>
 </base:WindowBase>

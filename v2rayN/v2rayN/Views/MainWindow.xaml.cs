@@ -1,7 +1,10 @@
+using System;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Windows.Controls;
 using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
+using ServiceLib.Handler;
 using v2rayN.Base;
 using v2rayN.Manager;
 
@@ -31,6 +34,12 @@ public partial class MainWindow
         btnNewUpdate.Click += MenuCheckUpdate_Click;
         btnConnect.Click += BtnConnect_Click;
         btnLocation.Click += BtnLocation_Click;
+        freedomHubHome.ConnectRequested += ConnectFreedomHubAsync;
+        freedomHubHome.PowerRequested += () =>
+        {
+            if (btnConnect is not null) BtnConnect_Click(btnConnect, new RoutedEventArgs());
+        };
+        freedomHubHome.AdvancedRequested += HideHome;
         menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
 
         pbTheme.Content ??= new ThemeSettingView();
@@ -273,6 +282,37 @@ public partial class MainWindow
         {
             menu.PlacementTarget = btnLocation;
             menu.IsOpen = true;
+        }
+    }
+
+    private void BtnFhHome_Click(object sender, RoutedEventArgs e) => ShowHome();
+
+    private void ShowHome() => freedomHubHome.Visibility = Visibility.Visible;
+
+    private void HideHome() => freedomHubHome.Visibility = Visibility.Collapsed;
+
+    private async Task ConnectFreedomHubAsync(string link, string ip)
+    {
+        try
+        {
+            var added = await ConfigHandler.AddBatchServers(_config, link, _config.SubIndexId, false);
+            var profile = ViewModel.ProfilesViewModel.ProfileItems.FirstOrDefault(item =>
+                string.Equals(item.Address, ip, StringComparison.OrdinalIgnoreCase));
+            if (profile is not null && !string.IsNullOrEmpty(profile.IndexId))
+            {
+                await ViewModel.ProfilesViewModel.SetDefaultServer(profile.IndexId);
+            }
+            else
+            {
+                await ViewModel.Reload();
+            }
+            var label = ip == FreedomHubHomeView.DeAddress ? "Germany" : "Netherlands";
+            freedomHubHome.SetState("Connected · " + label + " · FreedomHub");
+            UpdateConnectState();
+        }
+        catch (Exception ex)
+        {
+            NoticeManager.Instance.Enqueue("Connect failed: " + ex.Message);
         }
     }
 

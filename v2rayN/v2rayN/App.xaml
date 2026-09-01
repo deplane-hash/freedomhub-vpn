@@ -10,18 +10,18 @@
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme
                     BaseTheme="Dark"
-                    PrimaryColor="Teal"
-                    SecondaryColor="Green" />
+                    PrimaryColor="DeepPurple"
+                    SecondaryColor="Cyan" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign2.Defaults.xaml" />
                 <ResourceDictionary>
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary" Color="#0F8F6D" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary.Light" Color="#34D399" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary.Dark" Color="#0B6E55" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary.Foreground" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary" Color="#10B981" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary.Light" Color="#6EE7B7" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary.Dark" Color="#047857" />
-                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary.Foreground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary" Color="#0A1733" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary.Light" Color="#12315E" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary.Dark" Color="#081226" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Primary.Foreground" Color="#DBE9FF" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary" Color="#1FD6FF" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary.Light" Color="#6EE7FF" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary.Dark" Color="#0E8FB0" />
+                    <SolidColorBrush x:Key="MaterialDesign.Brush.Secondary.Foreground" Color="#03121E" />
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
             <system:Double x:Key="MenuItemHeight">32</system:Double>

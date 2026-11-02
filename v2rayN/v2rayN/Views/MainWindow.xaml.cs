@@ -329,8 +329,18 @@ public partial class MainWindow
             using var http = new System.Net.Http.HttpClient(handler) { Timeout = TimeSpan.FromSeconds(12) };
             // A real HTTPS CONNECT checks the mixed inbound, bundled core and
             // authenticated remote tunnel, independently of the OS proxy.
-            using var response = await http.GetAsync("https://www.gstatic.com/generate_204");
-            if ((int)response.StatusCode != 204) throw new InvalidOperationException("The proxy could not reach the connection check. Try again or check your network.");
+            System.Net.Http.HttpResponseMessage? response = null;
+            for (var attempt = 0; attempt < 4; attempt++)
+            {
+                try { response = await http.GetAsync("https://www.gstatic.com/generate_204"); break; }
+                catch (System.Net.Http.HttpRequestException) when (attempt < 3)
+                { await Task.Delay(400); }
+            }
+            using (response)
+            {
+                if (response is null || (int)response.StatusCode != 204)
+                    throw new InvalidOperationException("The proxy could not reach the connection check. Try again or check your network.");
+            }
             if (!await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, false))
                 throw new InvalidOperationException("Windows blocked your personal proxy settings. Your organization may manage them; administrator access is not requested.");
             if (!ServiceLib.Handler.SysProxy.ProxySettingWindows.VerifyCurrentUserProxy($"127.0.0.1:{port}"))
@@ -341,8 +351,8 @@ public partial class MainWindow
         catch (Exception ex)
         {
             _proxyVerified = false;
-            await CoreManager.Instance.CoreStop();
-            await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true);
+            try { await CoreManager.Instance.CoreStop(); } catch { }
+            try { await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true); } catch { }
             freedomHubHome.SetState("Connect failed: " + ex.Message);
             NoticeManager.Instance.Enqueue("Connect failed: " + ex.Message);
         }

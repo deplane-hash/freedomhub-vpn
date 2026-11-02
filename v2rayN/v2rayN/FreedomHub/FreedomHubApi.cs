@@ -38,6 +38,7 @@ public static class FreedomHubApi
         {
             AutomaticDecompression = DecompressionMethods.All | DecompressionMethods.GZip,
             AllowAutoRedirect = false,
+            UseProxy = false, // Account refresh must survive a stale local proxy after a crash.
         };
         var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "FreedomHubVPN/25");

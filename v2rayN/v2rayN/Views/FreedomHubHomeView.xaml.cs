@@ -11,6 +11,7 @@ public partial class FreedomHubHomeView
     private FreedomHubAccount _account = new();
     private string _realityLink = "";
     private bool _requesting;
+    private bool? _lastRunning;
 
     public event System.Action<string, string>? ConnectRequested; // vless link, server ip
     public event System.Action? PowerRequested;
@@ -161,6 +162,8 @@ public partial class FreedomHubHomeView
 
     public void UpdateConnectionState(bool running)
     {
+        if (_lastRunning == running) return;
+        _lastRunning = running;
         btnPower.Content = running ? "Disconnect" : "Connect";
         lblState.Text = running ? "Proxy verified · HTTPS connection successful" : "Disconnected";
         lblConnectionTitle.Text = running ? "Your proxy is connected" : "Ready when you are";

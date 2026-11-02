@@ -43,7 +43,7 @@ public partial class MainWindow
         freedomHubHome.DisconnectRequested += async () =>
         {
             await CoreManager.Instance.CoreStop();
-            await SysProxyHandler.UpdateSysProxy(_config, true);
+            await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true);
             UpdateConnectState();
         };
         menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
@@ -273,7 +273,7 @@ public partial class MainWindow
         if (IsAnyCoreRunning())
         {
             await CoreManager.Instance.CoreStop();
-            await SysProxyHandler.UpdateSysProxy(_config, true);
+            await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true);
             UpdateConnectState();
         }
         else

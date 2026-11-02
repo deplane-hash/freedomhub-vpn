@@ -24,6 +24,10 @@ jobs:
         with:
           dotnet-version: '10.0.302'
 
+      - name: Verify REALITY-only connection policy
+        shell: pwsh
+        run: dotnet run --project tests/ConnectionPolicy/ConnectionPolicy.csproj -c Release
+
       - name: Publish (self-contained single-file)
         shell: pwsh
         run: |
@@ -32,6 +36,19 @@ jobs:
             -p:EnableCompressionInSingleFile=true `
             -o "$env:GITHUB_WORKSPACE\dist\bin"
           echo "publish complete"
+
+      - name: Bundle verified Xray engine
+        shell: pwsh
+        run: |
+          $uri = "https://github.com/XTLS/Xray-core/releases/download/v26.10.31/Xray-windows-64.zip"
+          Invoke-WebRequest $uri -OutFile xray.zip
+          Invoke-WebRequest "$uri.dgst" -OutFile xray.dgst
+          $digest = Get-Content xray.dgst -Raw
+          $actual = (Get-FileHash xray.zip -Algorithm SHA256).Hash.ToLower()
+          if (-not $digest.ToLower().Contains($actual)) { throw "Xray checksum mismatch" }
+          Expand-Archive xray.zip -DestinationPath "$env:GITHUB_WORKSPACE\dist\bin\bin\Xray" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\dist\bin\bin\Xray\*.dat" "$env:GITHUB_WORKSPACE\dist\bin\bin\"
+          @("FreedomHub VPN v25", "VLESS + REALITY only on TCP 443.", "Run FreedomHubVPN.exe, sign in and press Connect.", "Google TLS camouflage does not change the server IP.", "This package is unsigned.") | Set-Content "$env:GITHUB_WORKSPACE\dist\bin\START-HERE.txt"
 
       - name: Package zip + SHA-256
         shell: pwsh

@@ -16,11 +16,10 @@ public sealed class FreedomHubAccount
     public double UsedGb { get; set; }
     public double RemainingGb { get; set; }
     public bool OverQuota { get; set; }
+    public bool Unlimited { get; set; }
     public string Week { get; set; } = "";
     public string Resets { get; set; } = "";
-    public string VlessDirectDe { get; set; } = "";
-    public string VlessDirectNl { get; set; } = "";
-    public string VlessCdn { get; set; } = "";
+    public string VlessReality { get; set; } = "";
 }
 
 public static class FreedomHubApi
@@ -28,7 +27,7 @@ public static class FreedomHubApi
     private static readonly string[] BaseHosts =
     [
         "https://freedomhub.at",
-        "https://freedomhub.nothingbox.net",
+        "https://freedomhub.nothingbox.rocks",
     ];
 
     private static readonly HttpClient Client = CreateClient();
@@ -41,7 +40,7 @@ public static class FreedomHubApi
             AllowAutoRedirect = false,
         };
         var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "FreedomHubVPN/14");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "FreedomHubVPN/25");
         client.DefaultRequestHeaders.TryAddWithoutValidation("Cache-Control", "no-cache");
         return client;
     }
@@ -102,14 +101,17 @@ public static class FreedomHubApi
             account.Plan = ReadString(root, "plan");
             account.Week = ReadString(root, "week");
             account.Resets = ReadString(root, "resets");
-            account.VlessCdn = ReadString(root, "vless_link_cdn");
+            account.VlessReality = ReadString(root, "vless_link_reality");
+            account.Unlimited = root.TryGetProperty("unlimited", out var un) && un.ValueKind == JsonValueKind.True;
             account.OverQuota = root.TryGetProperty("over_quota", out var oq) && oq.ValueKind == JsonValueKind.True;
             account.QuotaGb = ReadDouble(root, "quota_gb");
             account.UsedGb = ReadDouble(root, "used_gb");
             account.RemainingGb = ReadDouble(root, "remaining_gb");
-            account.VlessDirectDe = ReadString(root, "vless_link_de");
-            account.VlessDirectNl = ReadString(root, "vless_link_nl");
-            if (account.VlessDirectDe == "") account.VlessDirectDe = ReadString(root, "vless_link_direct");
+            if (account.Success && !ServiceLib.Handler.FreedomHubConnectionPolicy.IsAllowedLink(account.VlessReality))
+            {
+                account.Success = false;
+                account.Error = "The server did not supply a supported REALITY profile.";
+            }
         }
         catch
         {

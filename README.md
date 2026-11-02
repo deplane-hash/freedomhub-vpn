@@ -41,7 +41,7 @@ executable (no .NET runtime needed on the client machine).
 
 ## Server / engine
 
-The client connects to a VLESS+TCP server endpoint provisioned by the FreedomHub
+The client connects to a VLESS + REALITY endpoint on TCP 443 with dl.google.com TLS camouflage provisioned by the FreedomHub
 service (Xray-core). Connection details are delivered per-user via the
 subscription URL provided in the app.
 
@@ -49,3 +49,7 @@ subscription URL provided in the app.
 
 Signed releases use the free DigiCert Open Source certificate (see
 `oss/SIGNING-STEPS.txt`). The signing pipeline is in `oss/sign-vpn.sh`.
+
+## Connection policy
+
+The FreedomHub UI exposes only its REALITY profile. Legacy direct/CDN/location profiles are not selected as fallbacks, and the core reload path rejects other destinations and transports. Google camouflage does not change the destination IP or make Google the VPN provider.

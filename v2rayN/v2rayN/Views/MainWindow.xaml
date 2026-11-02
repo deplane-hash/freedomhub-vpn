@@ -99,7 +99,7 @@
                             Height="36"
                             Margin="{StaticResource MarginLeftRight8}"
                             Padding="10,0"
-                            ToolTip="Choose Germany or Netherlands"
+                            ToolTip="FreedomHub REALITY"
                             Style="{StaticResource DefButton}">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon
@@ -114,10 +114,9 @@
                             </StackPanel>
                             <Button.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Germany (Nuremberg)" Click="MenuLocationGermany_Click" />
-                                    <MenuItem Header="Netherlands" Click="MenuLocationNetherlands_Click" />
+                                    <MenuItem Header="FreedomHub REALITY · 443" Click="MenuReality_Click" />
                                     <Separator />
-                                    <MenuItem Header="Open web location settings" Click="MenuLocationWeb_Click" />
+                                    <MenuItem Header="Open VPN settings" Click="MenuLocationWeb_Click" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>

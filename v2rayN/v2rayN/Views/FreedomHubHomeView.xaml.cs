@@ -8,21 +8,19 @@ public partial class FreedomHubHomeView
 {
     private string? _baseUrl;
     private FreedomHubAccount _account = new();
-    private string _deLink = "";
-    private string _nlLink = "";
-    private string _activeLocation = "";
+    private string _realityLink = "";
+    private bool _requesting;
 
     public event System.Action<string, string>? ConnectRequested; // vless link, server ip
     public event System.Action? PowerRequested;
-    public event System.Action? AdvancedRequested;
 
-    public const string DeAddress = "5.45.110.86";
-    public const string NlAddress = "113.30.188.9";
+    public const string ServerAddress = "62.171.165.206";
+    public event System.Action? DisconnectRequested;
 
     public FreedomHubHomeView()
     {
         InitializeComponent();
-        lblVersion.Text = "v15 · " + Utils.GetVersion();
+        lblVersion.Text = "v25 · " + Utils.GetVersion();
     }
 
     private async void BtnSignIn_Click(object sender, RoutedEventArgs e)
@@ -65,10 +63,13 @@ public partial class FreedomHubHomeView
                 }
             }
 
-            _deLink = _account.VlessDirectDe;
-            _nlLink = _account.VlessDirectNl;
-            if (_deLink == "") _deLink = _account.VlessCdn;
-            if (_nlLink == "") _nlLink = _deLink;
+            _realityLink = _account.VlessReality;
+            if (!ServiceLib.Handler.FreedomHubConnectionPolicy.IsAllowedLink(_realityLink))
+            {
+                lblLoginError.Text = "The REALITY profile is unavailable. Please try again shortly.";
+                return;
+            }
+            txtPassword.Password = "";
 
             ShowHome(username);
         }
@@ -88,13 +89,17 @@ public partial class FreedomHubHomeView
         lblGreeting.Text = "Signed in as " + username + " · FreedomHub";
 
         UpdateQuota();
-        var initial = _activeLocation != "" ? _activeLocation : "de";
-        SelectLocation(initial);
+        lblState.Text = "Ready · VLESS REALITY · port 443";
     }
 
     private void UpdateQuota()
     {
-        if (_account.RemainingGb > 0)
+        if (_account.Unlimited)
+        {
+            lblQuota.Text = "Unlimited data";
+            lblQuota.Foreground = new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99));
+        }
+        else if (_account.RemainingGb > 0)
         {
             lblQuota.Text = $"{_account.RemainingGb:0.##} GB left";
             lblQuota.Foreground = new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99));
@@ -121,34 +126,42 @@ public partial class FreedomHubHomeView
             : $"week {_account.Week}";
     }
 
-    private void SelectLocation(string code)
+    private void BtnReality_Click(object sender, RoutedEventArgs e) => RequestConnection();
+
+    public async void RequestConnection()
     {
-        _activeLocation = code;
-        HighlightLocation(code);
+        if (_requesting) return;
+        if (_baseUrl is null || string.IsNullOrWhiteSpace(_account.Token))
+        {
+            lblState.Text = "Sign in to connect.";
+            return;
+        }
+        _requesting = true;
+        btnPower.IsEnabled = false;
+        var token = _account.Token;
+        try
+        {
+            var fresh = await FreedomHubApi.ConfigAsync(_baseUrl, token);
+            if (_account.Token != token) return;
+            if (!fresh.Success || !ServiceLib.Handler.FreedomHubConnectionPolicy.IsAllowedLink(fresh.VlessReality))
+            {
+                lblState.Text = string.IsNullOrEmpty(fresh.Error) ? "Connection unavailable. Check your account and data allowance." : fresh.Error;
+                return;
+            }
+            _account = fresh;
+            _realityLink = fresh.VlessReality;
+            UpdateQuota();
+            lblState.Text = "Connecting…";
+            ConnectRequested?.Invoke(_realityLink, ServerAddress);
+        }
+        catch { lblState.Text = "Could not refresh your VPN profile. Try again."; }
+        finally { _requesting = false; btnPower.IsEnabled = true; }
     }
 
-    private void HighlightLocation(string code)
+    public void UpdateConnectionState(bool running)
     {
-        var cyan = new SolidColorBrush(Color.FromRgb(0x1F, 0xD6, 0xFF));
-        var line = new SolidColorBrush(Color.FromRgb(0x27, 0x40, 0x63));
-        var active = new SolidColorBrush(Color.FromRgb(0x14, 0x2E, 0x4B));
-
-        btnDe.Background = code == "de" ? active : Brushes.Transparent;
-        btnNl.Background = code == "nl" ? active : Brushes.Transparent;
-        btnDe.BorderBrush = code == "de" ? cyan : line;
-        btnNl.BorderBrush = code == "nl" ? cyan : line;
-    }
-
-    private void BtnDe_Click(object sender, RoutedEventArgs e)
-    {
-        SelectLocation("de");
-        RaiseConnect("de");
-    }
-
-    private void BtnNl_Click(object sender, RoutedEventArgs e)
-    {
-        SelectLocation("nl");
-        RaiseConnect("nl");
+        btnPower.Content = running ? "Disconnect" : "Connect";
+        lblState.Text = running ? "Connection started · VLESS REALITY" : "Disconnected";
     }
 
     private void BtnPower_Click(object sender, RoutedEventArgs e)
@@ -156,20 +169,6 @@ public partial class FreedomHubHomeView
         PowerRequested?.Invoke();
     }
 
-    private void BtnAdvanced_Click(object sender, RoutedEventArgs e) => AdvancedRequested?.Invoke();
-
-    private void RaiseConnect(string code)
-    {
-        var link = code == "nl" ? _nlLink : _deLink;
-        var ip = code == "nl" ? NlAddress : DeAddress;
-        if (string.IsNullOrWhiteSpace(link))
-        {
-            lblState.Text = "Sign in first to get a connection link.";
-            return;
-        }
-        lblState.Text = $"Switching to {(code == "nl" ? "Netherlands" : "Germany")}…";
-        ConnectRequested?.Invoke(link, ip);
-    }
 
     public void SetState(string text)
     {
@@ -179,9 +178,8 @@ public partial class FreedomHubHomeView
     private void BtnSignOut_Click(object sender, RoutedEventArgs e)
     {
         _account = new FreedomHubAccount();
-        _deLink = "";
-        _nlLink = "";
-        _activeLocation = "";
+        DisconnectRequested?.Invoke();
+        _realityLink = "";
         panelHome.Visibility = Visibility.Collapsed;
         panelLogin.Visibility = Visibility.Visible;
         btnSignOut.Visibility = Visibility.Collapsed;

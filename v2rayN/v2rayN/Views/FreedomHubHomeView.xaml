@@ -71,7 +71,6 @@
                     <TextBlock Text="FreedomHub VPN" Foreground="White" FontWeight="Black" FontSize="17" />
                     <TextBlock x:Name="lblVersion" Text="v14" Foreground="#8EA9C8" FontSize="11" Margin="0,1,0,0" />
                 </StackPanel>
-                <Button x:Name="btnAdvanced" DockPanel.Dock="Right" Style="{StaticResource FhGhostButton}" Margin="0,0,0,0" VerticalAlignment="Center" Click="BtnAdvanced_Click" Content="Advanced server list" />
                 <Button x:Name="btnSignOut" DockPanel.Dock="Right" Style="{StaticResource FhGhostButton}" Margin="0,0,10,0" VerticalAlignment="Center" Click="BtnSignOut_Click" Visibility="Collapsed" Content="Sign out" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed" x:Name="lblSignedInRow" Margin="0,0,14,0">
                     <TextBlock x:Name="lblSignedInUser" Foreground="#1FD6FF" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
@@ -117,33 +116,19 @@
                     </Grid>
                 </Border>
 
-                <!-- location -->
-                <TextBlock Text="SERVER LOCATION" Foreground="#1FD6FF" FontSize="12" FontWeight="Bold" Margin="0,4,0,8" />
-                <Grid Margin="0,0,0,14">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="10" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="btnDe" Grid.Column="0" Click="BtnDe_Click" Style="{StaticResource FhGhostButton}" Height="64" HorizontalAlignment="Stretch">
-                        <StackPanel>
-                            <TextBlock Text="🇩🇪  Germany (Nuremberg)" Foreground="White" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
-                            <TextBlock Text="5.45.110.86" Foreground="#8EA9C8" FontSize="11" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="btnNl" Grid.Column="2" Click="BtnNl_Click" Style="{StaticResource FhGhostButton}" Height="64" HorizontalAlignment="Stretch">
-                        <StackPanel>
-                            <TextBlock Text="🇳🇱  Netherlands" Foreground="White" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
-                            <TextBlock Text="113.30.188.9" Foreground="#8EA9C8" FontSize="11" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
+                <TextBlock Text="YOUR VPN" Foreground="#1FD6FF" FontSize="12" FontWeight="Bold" Margin="0,4,0,8" />
+                <Button x:Name="btnReality" Click="BtnReality_Click" Style="{StaticResource FhGhostButton}" Height="72" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="FreedomHub REALITY" Foreground="White" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" />
+                        <TextBlock Text="VLESS · TCP 443 · Google TLS camouflage" Foreground="#8EA9C8" FontSize="12" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
                 <Button x:Name="btnPower" Content="Connect" Style="{StaticResource FhPrimaryButton}" Click="BtnPower_Click" HorizontalAlignment="Stretch" Height="48" />
                 <TextBlock x:Name="lblState" Foreground="#8EA9C8" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center" />
 
                 <Separator Margin="0,18,0,10" Background="{StaticResource FhLine}" />
-                <TextBlock Text="Your connection stays inside the FreedomHub network. Switching location on the web page also updates this app on next sign-in." Foreground="#5B7BA6" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap" />
+                <TextBlock Text="One connection, delivered securely from your FreedomHub account. REALITY camouflage does not change the server’s IP address." Foreground="#5B7BA6" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap" />
             </StackPanel>
         </ScrollViewer>
     </Grid>

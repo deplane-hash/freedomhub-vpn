@@ -659,6 +659,13 @@ public class MainWindowViewModel : MyReactiveObject
                 NoticeManager.Instance.Enqueue(ResUI.CheckServerSettings);
                 return;
             }
+            if (!FreedomHubConnectionPolicy.IsAllowed(profileItem))
+            {
+                await CoreManager.Instance.CoreStop();
+                await SysProxyHandler.UpdateSysProxy(_config, true);
+                NoticeManager.Instance.Enqueue("Sign in to FreedomHub to use the REALITY connection.");
+                return;
+            }
             var allResult = await CoreConfigContextBuilder.BuildAll(_config, profileItem);
             if (NoticeManager.Instance.NotifyValidatorResult(allResult.CombinedValidatorResult) && !allResult.Success)
             {

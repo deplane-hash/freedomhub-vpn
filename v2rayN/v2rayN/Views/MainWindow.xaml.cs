@@ -37,9 +37,15 @@ public partial class MainWindow
         freedomHubHome.ConnectRequested += (link, ip) => { _ = ConnectFreedomHubAsync(link, ip); };
         freedomHubHome.PowerRequested += () =>
         {
-            if (btnConnect is not null) BtnConnect_Click(btnConnect, new RoutedEventArgs());
+            if (IsAnyCoreRunning()) BtnConnect_Click(btnConnect, new RoutedEventArgs());
+            else freedomHubHome.RequestConnection();
         };
-        freedomHubHome.AdvancedRequested += HideHome;
+        freedomHubHome.DisconnectRequested += async () =>
+        {
+            await CoreManager.Instance.CoreStop();
+            await SysProxyHandler.UpdateSysProxy(_config, true);
+            UpdateConnectState();
+        };
         menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
 
         pbTheme.Content ??= new ThemeSettingView();
@@ -267,6 +273,7 @@ public partial class MainWindow
         if (IsAnyCoreRunning())
         {
             await CoreManager.Instance.CoreStop();
+            await SysProxyHandler.UpdateSysProxy(_config, true);
             UpdateConnectState();
         }
         else
@@ -295,59 +302,29 @@ public partial class MainWindow
     {
         try
         {
-            var added = await ConfigHandler.AddBatchServers(_config, link, _config.SubIndexId, false);
-            var profile = ViewModel.ProfilesViewModel.ProfileItems.FirstOrDefault(item =>
-                string.Equals(item.Address, ip, StringComparison.OrdinalIgnoreCase));
-            if (profile is not null && !string.IsNullOrEmpty(profile.IndexId))
-            {
-                await ViewModel.ProfilesViewModel.SetDefaultServer(profile.IndexId);
-            }
-            else
-            {
-                await ViewModel.Reload();
-            }
-            var label = ip == FreedomHubHomeView.DeAddress ? "Germany" : "Netherlands";
-            freedomHubHome.SetState("Connected · " + label + " · FreedomHub");
+            if (!FreedomHubConnectionPolicy.IsAllowedLink(link)) throw new InvalidOperationException("Unsupported VPN profile.");
+            await ConfigHandler.AddBatchServers(_config, link, _config.SubIndexId, false);
+            await ViewModel.ProfilesViewModel.RefreshServers();
+            var profiles = await AppManager.Instance.ProfileItems("");
+            var uuid = Uri.UnescapeDataString(new Uri(link).UserInfo);
+            var profile = profiles?.LastOrDefault(item => FreedomHubConnectionPolicy.IsAllowed(item) && item.Password == uuid);
+            if (profile is null) throw new InvalidOperationException("The REALITY profile could not be imported.");
+            await ConfigHandler.SetDefaultServerIndex(_config, profile.IndexId);
+            _config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedChange;
+            await ViewModel.Reload();
             UpdateConnectState();
         }
         catch (Exception ex)
         {
+            freedomHubHome.SetState("Connect failed: " + ex.Message);
             NoticeManager.Instance.Enqueue("Connect failed: " + ex.Message);
         }
     }
 
-    private async void MenuLocationGermany_Click(object sender, RoutedEventArgs e)
-    {
-        await SelectFreedomHubLocationAsync("de", "Germany", "5.45.110.86");
-    }
-
-    private async void MenuLocationNetherlands_Click(object sender, RoutedEventArgs e)
-    {
-        await SelectFreedomHubLocationAsync("nl", "Netherlands", "113.30.188.9");
-    }
+    private void MenuReality_Click(object sender, RoutedEventArgs e) => freedomHubHome.RequestConnection();
 
     private void MenuLocationWeb_Click(object sender, RoutedEventArgs e)
-    {
-        ProcUtils.ProcessStart("https://freedomhub.at/vpn.php");
-    }
-
-    private async Task SelectFreedomHubLocationAsync(string code, string label, string address)
-    {
-        var profile = ViewModel.ProfilesViewModel.ProfileItems.FirstOrDefault(item =>
-            string.Equals(item.Address, address, StringComparison.OrdinalIgnoreCase)
-            || item.Remarks.Contains(label, StringComparison.OrdinalIgnoreCase));
-
-        if (profile is null || string.IsNullOrEmpty(profile.IndexId))
-        {
-            ProcUtils.ProcessStart($"https://freedomhub.at/vpn.php?location={code}");
-            NoticeManager.Instance.Enqueue($"No {label} profile is installed. Opened web location settings.");
-            return;
-        }
-
-        await ViewModel.ProfilesViewModel.SetDefaultServer(profile.IndexId);
-        btnLocation.ToolTip = $"Current location: {label}";
-        NoticeManager.Instance.Enqueue($"FreedomHub location set to {label}.");
-    }
+        => ProcUtils.ProcessStart("https://freedomhub.at/vpn.php");
 
     private static bool IsAnyCoreRunning()
     {
@@ -359,6 +336,7 @@ public partial class MainWindow
     {
         if (icoConnect == null || prgConnect == null || btnConnect == null) return;
 
+        freedomHubHome.UpdateConnectionState(IsAnyCoreRunning());
         var connecting = !ViewModel.BlReloadEnabled;
         prgConnect.Visibility = connecting ? Visibility.Visible : Visibility.Collapsed;
         icoConnect.Visibility = connecting ? Visibility.Collapsed : Visibility.Visible;

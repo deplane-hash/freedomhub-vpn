@@ -666,6 +666,7 @@ public class MainWindowViewModel : MyReactiveObject
                 NoticeManager.Instance.Enqueue("Sign in to FreedomHub to use the REALITY connection.");
                 return;
             }
+            _config.TunModeItem.EnableTun = false;
             var allResult = await CoreConfigContextBuilder.BuildAll(_config, profileItem);
             if (NoticeManager.Instance.NotifyValidatorResult(allResult.CombinedValidatorResult) && !allResult.Success)
             {

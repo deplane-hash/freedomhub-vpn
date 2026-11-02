@@ -43,6 +43,7 @@ public partial class App
 
         AppManager.Instance.WindowDialog = new WindowDialog();
 
+        AppManager.Instance.Config.TunModeItem.EnableTun = false;
         AppManager.Instance.InitComponents();
 
         RxAppBuilder.CreateReactiveUIBuilder()

@@ -9,28 +9,25 @@ public static class ProxySettingWindows
 
     private static bool SetProxyFallback(string? strProxy, string? exceptions, int type)
     {
-        if (type == 1)
-        {
-            WindowsUtils.RegWriteValue(_regPath, "ProxyEnable", 0);
-            WindowsUtils.RegWriteValue(_regPath, "ProxyServer", string.Empty);
-            WindowsUtils.RegWriteValue(_regPath, "ProxyOverride", string.Empty);
-            WindowsUtils.RegWriteValue(_regPath, "AutoConfigURL", string.Empty);
-        }
-        if (type == 2)
-        {
-            WindowsUtils.RegWriteValue(_regPath, "ProxyEnable", 1);
-            WindowsUtils.RegWriteValue(_regPath, "ProxyServer", strProxy ?? string.Empty);
-            WindowsUtils.RegWriteValue(_regPath, "ProxyOverride", exceptions ?? string.Empty);
-            WindowsUtils.RegWriteValue(_regPath, "AutoConfigURL", string.Empty);
-        }
-        else if (type == 4)
-        {
-            WindowsUtils.RegWriteValue(_regPath, "ProxyEnable", 0);
-            WindowsUtils.RegWriteValue(_regPath, "ProxyServer", string.Empty);
-            WindowsUtils.RegWriteValue(_regPath, "ProxyOverride", string.Empty);
-            WindowsUtils.RegWriteValue(_regPath, "AutoConfigURL", strProxy ?? string.Empty);
-        }
-        return true;
+        using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(_regPath, true)
+            ?? throw new InvalidOperationException("Windows did not allow changing your personal proxy settings.");
+        key.SetValue("ProxyEnable", type == 2 ? 1 : 0, Microsoft.Win32.RegistryValueKind.DWord);
+        key.SetValue("ProxyServer", type == 2 ? strProxy ?? string.Empty : string.Empty);
+        key.SetValue("ProxyOverride", type == 2 ? exceptions ?? string.Empty : string.Empty);
+        key.SetValue("AutoConfigURL", type == 4 ? strProxy ?? string.Empty : string.Empty);
+        _ = NativeMethods.InternetSetOption(nint.Zero, InternetOption.INTERNET_OPTION_SETTINGS_CHANGED, nint.Zero, 0);
+        _ = NativeMethods.InternetSetOption(nint.Zero, InternetOption.INTERNET_OPTION_REFRESH, nint.Zero, 0);
+        return VerifyCurrentUserProxy(strProxy, type);
+    }
+
+    public static bool VerifyCurrentUserProxy(string? expected, int type = 2)
+    {
+        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(_regPath);
+        var enabled = Convert.ToInt32(key?.GetValue("ProxyEnable", 0) ?? 0) != 0;
+        if (type == 1) return !enabled;
+        if (type != 2) return true;
+        return enabled && string.Equals(key?.GetValue("ProxyServer")?.ToString(), expected, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrEmpty(key?.GetValue("AutoConfigURL")?.ToString());
     }
 
     /// <summary>
@@ -57,23 +54,18 @@ public static class ProxySettingWindows
     /// <returns>true: one of connection is successfully updated proxy settings</returns>
     public static bool SetProxy(string? strProxy, string? exceptions, int type)
     {
+        // LAN is the required result. Optional RAS enumeration cannot turn a LAN
+        // failure into success or invalidate a successfully configured LAN.
+        try { SetConnectionProxy(null, strProxy, exceptions, type); }
+        catch { return SetProxyFallback(strProxy, exceptions, type); }
+        if (!VerifyCurrentUserProxy(strProxy, type)) return SetProxyFallback(strProxy, exceptions, type);
         try
         {
-            // set proxy for LAN
-            var result = SetConnectionProxy(null, strProxy, exceptions, type);
-            // set proxy for dial up connections
-            var connections = EnumerateRasEntries();
-            foreach (var connection in connections)
-            {
-                result |= SetConnectionProxy(connection, strProxy, exceptions, type);
-            }
-            return result;
+            foreach (var connection in EnumerateRasEntries())
+                try { SetConnectionProxy(connection, strProxy, exceptions, type); } catch { }
         }
-        catch
-        {
-            _ = SetProxyFallback(strProxy, exceptions, type);
-            return false;
-        }
+        catch { }
+        return true;
     }
 
     private static bool SetConnectionProxy(string? connectionName, string? strProxy, string? exceptions, int type)

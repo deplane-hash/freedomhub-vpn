@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace v2rayN.Views;
 
@@ -161,7 +162,18 @@ public partial class FreedomHubHomeView
     public void UpdateConnectionState(bool running)
     {
         btnPower.Content = running ? "Disconnect" : "Connect";
-        lblState.Text = running ? "Connection started · VLESS REALITY" : "Disconnected";
+        lblState.Text = running ? "Proxy verified · HTTPS connection successful" : "Disconnected";
+        lblConnectionTitle.Text = running ? "Your proxy is connected" : "Ready when you are";
+        connectionShield.Stroke = new SolidColorBrush(running ? Color.FromRgb(0x34, 0xD3, 0x99) : Color.FromRgb(0xA6, 0x8A, 0xFF));
+        if (SystemParameters.ClientAreaAnimation)
+        {
+            // SnapshotAndReplace retargets from the current presentation value.
+            var animation = new DoubleAnimation(running ? 1.06 : 1, TimeSpan.FromMilliseconds(220))
+            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            var scale = (ScaleTransform)connectionShield.RenderTransform;
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, animation, HandoffBehavior.SnapshotAndReplace);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, animation, HandoffBehavior.SnapshotAndReplace);
+        }
     }
 
     private void BtnPower_Click(object sender, RoutedEventArgs e)
@@ -173,6 +185,7 @@ public partial class FreedomHubHomeView
     public void SetState(string text)
     {
         lblState.Text = text;
+        lblConnectionTitle.Text = text.StartsWith("Connect failed") ? "Connection needs attention" : text;
     }
 
     private void BtnSignOut_Click(object sender, RoutedEventArgs e)

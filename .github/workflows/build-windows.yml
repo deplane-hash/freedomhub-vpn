@@ -48,7 +48,7 @@ jobs:
           if (-not $digest.ToLower().Contains($actual)) { throw "Xray checksum mismatch" }
           Expand-Archive xray.zip -DestinationPath "$env:GITHUB_WORKSPACE\dist\bin\bin\Xray" -Force
           Copy-Item "$env:GITHUB_WORKSPACE\dist\bin\bin\Xray\*.dat" "$env:GITHUB_WORKSPACE\dist\bin\bin\"
-          @("FreedomHub VPN v25", "VLESS + REALITY only on TCP 443.", "Run FreedomHubVPN.exe, sign in and press Connect.", "Google TLS camouflage does not change the server IP.", "This package is unsigned.") | Set-Content "$env:GITHUB_WORKSPACE\dist\bin\START-HERE.txt"
+          @("FreedomHub VPN v25", "VLESS + REALITY only on TCP 443.", "Run FreedomHubVPN.exe, sign in and press Connect.", "Google TLS camouflage does not change the server IP.", "No administrator access or TUN driver. Uses your personal Windows system proxy.", "Covers browsers and proxy-aware apps, not every application.", "This package is unsigned.") | Set-Content "$env:GITHUB_WORKSPACE\dist\bin\START-HERE.txt"
 
       - name: Package zip + SHA-256
         shell: pwsh

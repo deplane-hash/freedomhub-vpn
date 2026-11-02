@@ -13,6 +13,7 @@ namespace v2rayN.Views;
 public partial class MainWindow
 {
     private static Config _config;
+    private bool _proxyVerified;
     private readonly SerialDisposable _layoutBindingsDisposable = new();
     private CheckUpdateView? _checkUpdateView;
     private BackupAndRestoreView? _backupAndRestoreView;
@@ -22,6 +23,7 @@ public partial class MainWindow
         InitializeComponent();
 
         _config = AppManager.Instance.Config;
+        _config.TunModeItem.EnableTun = false;
         ThreadPool.RegisterWaitForSingleObject(App.ProgramStarted, OnProgramStarted, null, -1, false);
 
         App.Current.SessionEnding += Current_SessionEnding;
@@ -42,6 +44,7 @@ public partial class MainWindow
         };
         freedomHubHome.DisconnectRequested += async () =>
         {
+            _proxyVerified = false;
             await CoreManager.Instance.CoreStop();
             await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true);
             UpdateConnectState();
@@ -272,6 +275,7 @@ public partial class MainWindow
 
         if (IsAnyCoreRunning())
         {
+            _proxyVerified = false;
             await CoreManager.Instance.CoreStop();
             await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true);
             UpdateConnectState();
@@ -279,7 +283,7 @@ public partial class MainWindow
         else
         {
             UpdateConnectState();
-            ViewModel.ReloadCmd.Execute().Subscribe(_ => UpdateConnectState());
+            freedomHubHome.RequestConnection();
         }
     }
 
@@ -310,12 +314,35 @@ public partial class MainWindow
             var profile = profiles?.LastOrDefault(item => FreedomHubConnectionPolicy.IsAllowed(item) && item.Password == uuid);
             if (profile is null) throw new InvalidOperationException("The REALITY profile could not be imported.");
             await ConfigHandler.SetDefaultServerIndex(_config, profile.IndexId);
+            _config.TunModeItem.EnableTun = false;
             _config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedChange;
+            _config.SystemProxyItem.SystemProxyAdvancedProtocol = string.Empty;
+            _config.SystemProxyItem.SystemProxyExceptions = "localhost;127.*;[::1]";
+            _proxyVerified = false;
             await ViewModel.Reload();
+            var port = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+            using var handler = new System.Net.Http.HttpClientHandler
+            {
+                UseProxy = true, Proxy = new System.Net.WebProxy($"http://127.0.0.1:{port}"),
+                AllowAutoRedirect = false
+            };
+            using var http = new System.Net.Http.HttpClient(handler) { Timeout = TimeSpan.FromSeconds(12) };
+            // A real HTTPS CONNECT checks the mixed inbound, bundled core and
+            // authenticated remote tunnel, independently of the OS proxy.
+            using var response = await http.GetAsync("https://www.gstatic.com/generate_204");
+            if ((int)response.StatusCode != 204) throw new InvalidOperationException("The proxy could not reach the connection check. Try again or check your network.");
+            if (!await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, false))
+                throw new InvalidOperationException("Windows blocked your personal proxy settings. Your organization may manage them; administrator access is not requested.");
+            if (!ServiceLib.Handler.SysProxy.ProxySettingWindows.VerifyCurrentUserProxy($"127.0.0.1:{port}"))
+                throw new InvalidOperationException("Windows did not keep the proxy settings. Check your organization's proxy policy.");
+            _proxyVerified = true;
             UpdateConnectState();
         }
         catch (Exception ex)
         {
+            _proxyVerified = false;
+            await CoreManager.Instance.CoreStop();
+            await ServiceLib.Handler.SysProxy.SysProxyHandler.UpdateSysProxy(_config, true);
             freedomHubHome.SetState("Connect failed: " + ex.Message);
             NoticeManager.Instance.Enqueue("Connect failed: " + ex.Message);
         }
@@ -336,7 +363,7 @@ public partial class MainWindow
     {
         if (icoConnect == null || prgConnect == null || btnConnect == null) return;
 
-        freedomHubHome.UpdateConnectionState(IsAnyCoreRunning());
+        freedomHubHome.UpdateConnectionState(IsAnyCoreRunning() && _proxyVerified);
         var connecting = !ViewModel.BlReloadEnabled;
         prgConnect.Visibility = connecting ? Visibility.Visible : Visibility.Collapsed;
         icoConnect.Visibility = connecting ? Visibility.Collapsed : Visibility.Visible;
@@ -348,7 +375,7 @@ public partial class MainWindow
         else if (IsAnyCoreRunning())
         {
             icoConnect.Foreground = new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99));
-            btnConnect.ToolTip = "Connected - click to disconnect";
+            btnConnect.ToolTip = _proxyVerified ? "Proxy verified - click to disconnect" : "Starting proxy…";
         }
         else
         {

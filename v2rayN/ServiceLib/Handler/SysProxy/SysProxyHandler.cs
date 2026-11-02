@@ -24,7 +24,7 @@ public static class SysProxyHandler
             {
                 case ESysProxyType.ForcedChange when Utils.IsWindows():
                     var (strProxy, strExceptions) = GetWindowsProxyString(config, port);
-                    ProxySettingWindows.SetProxy(strProxy, strExceptions, 2);
+                    if (!ProxySettingWindows.SetProxy(strProxy, strExceptions, 2)) return false;
                     break;
 
                 case ESysProxyType.ForcedChange when Utils.IsLinux():
@@ -38,7 +38,7 @@ public static class SysProxyHandler
                     break;
 
                 case ESysProxyType.ForcedClear when Utils.IsWindows():
-                    ProxySettingWindows.UnsetProxy();
+                    if (!ProxySettingWindows.UnsetProxy()) return false;
                     break;
 
                 case ESysProxyType.ForcedClear when Utils.IsLinux():
@@ -62,6 +62,7 @@ public static class SysProxyHandler
         catch (Exception ex)
         {
             Logging.SaveLog(_tag, ex);
+            return false;
         }
         return true;
     }
